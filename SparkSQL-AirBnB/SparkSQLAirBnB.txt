@@ -1,0 +1,73 @@
+
+
+Q1A
+
+import pyspark
+
+sc = pyspark.SparkContext.getOrCreate()
+inputRDD = sc.textFile("/FileStore/tables/ass4")
+airbnbRDD = inputRDD.map(lambda x: ( x.split('|') ) )
+
+# How many properties are in each city
+flattenedRDD = airbnbRDD.map(lambda x: ( x[11], 1) )
+resultRDD = flattenedRDD.reduceByKey(lambda x, y: x+y)
+
+display(resultRDD.collect())
+
+Q1B
+
+import pyspark
+
+sc = pyspark.SparkContext.getOrCreate()
+inputRDD = sc.textFile("/FileStore/tables/ass4")
+airbnbRDD = inputRDD.map(lambda x: ( x.split('|') ) )
+
+# List number of properties in each neighbourhood in Los Angeles, in descending order.
+filterRDD = airbnbRDD.filter(lambda x: x[11]=='Los Angeles')
+flattenedRDD = filterRDD.map(lambda x: ( x[5], 1) )
+resultRDD = flattenedRDD.reduceByKey(lambda x, y: x+y).sortBy(lambda x: x[1], ascending=False)
+
+display(resultRDD.collect())
+
+Q1C
+
+import pyspark
+
+sc = pyspark.SparkContext.getOrCreate()
+inputRDD = sc.textFile("/FileStore/tables/ass4")
+airbnbRDD = inputRDD.map(lambda x: ( x.split('|') ) )
+
+# List the number of property types (room_type) in each neighbourhood in Seattle.
+filterRDD = airbnbRDD.filter(lambda x: x[11]=='Seattle')
+flattenedRDD = filterRDD.map(lambda x: ( (x[5], x[6]), 1) )
+resultRDD = flattenedRDD.reduceByKey(lambda x, y: x+y).map(lambda x: (x[0][0], x[0][1],x[1])).sortBy(lambda x: x[0], ascending=False)
+
+display(resultRDD.collect())
+
+Q1D
+import pyspark
+
+sc = pyspark.SparkContext.getOrCreate()
+inputRDD = sc.textFile("/FileStore/tables/ass4")
+airbnbRDD = inputRDD.map(lambda x: ( x.split('|') ) )
+
+# List the average price of an 'Entire home/apt' in each City..
+filterRDD = airbnbRDD.filter(lambda x: x[6]=='Entire home/apt')
+mappedRDD = filterRDD.map(lambda x: ( x[11], (int(x[7]), 1)  ) ) 
+resultRDD = mappedRDD.reduceByKey( lambda x,y: ( x[0]+y[0], x[1]+y[1])  ) \
+.map(lambda x: ( x[0], round( x[1][0]/x[1][1], 2) ) ).sortBy(lambda x: x[1], ascending=False)
+
+display(resultRDD.collect())
+
+Q2A
+selectDF = inputDF.select(sqlFunc.col("room_type"), sqlFunc.col("city")).where((sqlFunc.col("city")=="Hawaii")).groupBy(sqlFunc.col("city"), sqlFunc.col("room_type")).agg({"room_type":"count"}).orderBy(sqlFunc.col("room_type"))
+selectDF.show()
+
+Q2B
+selectDF = inputDF.select(sqlFunc.col("id"), sqlFunc.col("city")).where((sqlFunc.col("minimum_nights")>"180")).groupBy(sqlFunc.col("city")).agg({"id":"count"}).orderBy(sqlFunc.col("city"))
+selectDF.show()
+
+Q2C
+from pyspark.sql import functions as F
+selectDF = inputDF.select(sqlFunc.col("room_type"), sqlFunc.col("neighbourhood"), sqlFunc.col("price")).where((sqlFunc.col("city")=="Rhode Island")).groupBy(sqlFunc.col("neighbourhood"), sqlFunc.col("room_type")).agg(F.max("price"), F.min("price"), F.avg("price")).orderBy(sqlFunc.col("neighbourhood"))
+selectDF.show()
